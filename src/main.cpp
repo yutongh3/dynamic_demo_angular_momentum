@@ -8,11 +8,13 @@
 #define NEOPIXEL_PIN 0
 #define NUMPIXELS 1
 #define SERVO_PIN 27
+#define SERVO_CHANNEL 0 // Define a channel for the PWM (0-15)
 #define CONTRACTED 7    // 0.5ms in 20ms period. 256 / (20/0.5)
 #define EXPANDED 32     // 2.5ms in 20ms period. 256 / (20/2.5)
 
 const char* ssid = "338smart";
 const char* password = "qwerty123";
+const char* reciver_ip = "172.16.0.4";
 
 WiFiUDP udp;
 unsigned int localUdpPort = 4210; 
@@ -22,8 +24,8 @@ void vUDPOutput(void *pvParameters) {
   uint32_t send_delay = *((uint32_t *)pvParameters);
   char packetBuffer[255];
   while (1) {
-    sprintf(packetBuffer, "SERVO DUTY: %lu", ledcRead(SERVO_PIN));
-    udp.beginPacket("172.16.0.4", 4210);
+    sprintf(packetBuffer, "SERVO DUTY: %lu", ledcRead(SERVO_CHANNEL));
+    udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
     vTaskDelay(send_delay / portTICK_PERIOD_MS); 
@@ -32,8 +34,11 @@ void vUDPOutput(void *pvParameters) {
 
 void vUDPInput(void *pvParameters) {
   uint32_t read_delay = *((uint32_t *)pvParameters);
-  ledcAttach(SERVO_PIN, 50, 8);
-  ledcWrite(SERVO_PIN, EXPANDED);
+
+  ledcAttachPin(SERVO_PIN, SERVO_CHANNEL);
+  ledcSetup(SERVO_CHANNEL, 50, 8);  // 50Hz with 8-bit resolution
+  ledcWrite(SERVO_CHANNEL, EXPANDED);
+
   char packetBuffer[255];
   int packetSize;
   int len;
@@ -45,14 +50,14 @@ void vUDPInput(void *pvParameters) {
         packetBuffer[len] = 0;
       }
       if (String(packetBuffer) == "CONTRACT") {
-        ledcWrite(SERVO_PIN, CONTRACTED);
-        strip.setPixelColor(0, strip.Color(0, 0, 5));
+        ledcWrite(SERVO_CHANNEL, CONTRACTED);
+        strip.setPixelColor(0, strip.Color(0, 0, 5)); // Blue color when contracted
         strip.show(); 
       }
       
       if (String(packetBuffer) == "EXPAND") {
-        ledcWrite(SERVO_PIN, EXPANDED);
-        strip.setPixelColor(0, strip.Color(0, 5, 0));
+        ledcWrite(SERVO_CHANNEL, EXPANDED);
+        strip.setPixelColor(0, strip.Color(0, 5, 0)); // Green color when expanded
         strip.show(); 
       }
     }
@@ -65,7 +70,7 @@ void vBatteryV(void *pvParameters) {
   uint32_t v = 100;
   while (1) {
     sprintf(packetBuffer, "BATTERY V: %lu", v--);
-    udp.beginPacket("172.16.0.4", 4210);
+    udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
     vTaskDelay(2000 / portTICK_PERIOD_MS); 
@@ -74,12 +79,12 @@ void vBatteryV(void *pvParameters) {
 
 void setup() {
   strip.begin();
-  strip.show(); 
+  strip.show(); // Initialize all pixels to 'off'
 
   uint32_t read_delay = 100;
   uint32_t send_delay = 10;
 
-  strip.setPixelColor(0, strip.Color(0, 5, 0));
+  strip.setPixelColor(0, strip.Color(0, 5, 0)); // Start with green color
   strip.show();
 
   Serial.begin(115200);
@@ -97,9 +102,9 @@ void setup() {
   udp.begin(localUdpPort);
   Serial.printf("UDP port %d\n", localUdpPort);
 
-  xTaskCreate(vUDPInput, "Task Blink", 2048, (void *)&read_delay, 2, NULL);
-  xTaskCreate(vBatteryV, "Task Blink", 2048, NULL, 2, NULL);
-  xTaskCreatePinnedToCore(vUDPOutput, "Task Blink", 2048, (void *)&send_delay, 2, NULL, 1);
+  xTaskCreate(vUDPInput, "Task Blink", 4096, (void *)&read_delay, 2, NULL);
+  xTaskCreate(vBatteryV, "Task Blink", 4096, NULL, 2, NULL);
+  xTaskCreatePinnedToCore(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, NULL, 1);
 }
 
 void loop() {
