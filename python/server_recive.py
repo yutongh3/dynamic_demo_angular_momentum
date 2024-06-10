@@ -44,7 +44,7 @@ def receive_data():
             if len(battery_volts) == 2:
                 lock.acquire()
                 global battery_voltage
-                battery_voltage = f"Battery: {int(battery_volts[1])}V"
+                battery_voltage = f"Battery: {float(battery_volts[1])/1000}V"
                 lock.release()
 
 def contract_servo(event):

@@ -5,6 +5,7 @@
 
 #define BUTTON 38
 #define LED_PIN 13
+#define VBATPIN 39
 #define NEOPIXEL_PIN 0
 #define NUMPIXELS 1
 #define SERVO_PIN 27
@@ -67,9 +68,11 @@ void vUDPInput(void *pvParameters) {
 
 void vBatteryV(void *pvParameters) {
   char packetBuffer[255];
-  uint32_t v = 100;
+  uint32_t v;
   while (1) {
-    sprintf(packetBuffer, "BATTERY V: %lu", v--);
+    v = (uint32_t)analogReadMilliVolts(VBATPIN);
+    v *= 2;
+    sprintf(packetBuffer, "BATTERY V: %lu", v);
     udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
