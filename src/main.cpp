@@ -85,7 +85,7 @@ void setup() {
   strip.show(); // Initialize all pixels to 'off'
 
   uint32_t read_delay = 100;
-  uint32_t send_delay = 10;
+  uint32_t send_delay = 16;
 
   strip.setPixelColor(0, strip.Color(0, 5, 0)); // Start with green color
   strip.show();
