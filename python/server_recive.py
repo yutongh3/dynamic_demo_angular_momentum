@@ -27,6 +27,7 @@ send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Data storage
 data_queue = deque(maxlen=350)  # Store the last 350 data points
 battery_voltage = "Battery: N/A"  # Initial battery voltage message
+text_color = 'black'
 
 def receive_data():
     while True:
@@ -42,9 +43,15 @@ def receive_data():
         elif 'BATTERY V' in message:
             battery_volts = message.split(':')
             if len(battery_volts) == 2:
+                voltage = float(battery_volts[1])/1000
                 lock.acquire()
                 global battery_voltage
-                battery_voltage = f"Battery: {float(battery_volts[1])/1000}V"
+                global text_color
+                if voltage < 3.8:
+                    text_color = 'red'
+                else:
+                    text_color = 'black'
+                battery_voltage = f"Battery: {voltage}V"
                 lock.release()
 
 def contract_servo(event):
@@ -76,10 +83,12 @@ def update(frame):
     lock.acquire()
     ydata = list(data_queue)
     updated_text = battery_voltage
+    updated_color = text_color
     lock.release()
     xdata = range(len(ydata))
     line.set_data(xdata, ydata)
     battery_text.set_text(updated_text)
+    battery_text.set_color(updated_color)
     return line, battery_text
 
 # Animation
