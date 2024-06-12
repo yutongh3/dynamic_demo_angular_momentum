@@ -23,13 +23,26 @@ Adafruit_NeoPixel strip(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 void vUDPOutput(void *pvParameters) {
   uint32_t send_delay = *((uint32_t *)pvParameters);
-  char packetBuffer[255];
+  char packetBuffer[1024]; // Increase buffer size to accommodate all data points
+  uint32_t dataPoints[10]; // Buffer to store 10 data points
+  int count = 0;
+
   while (1) {
-    sprintf(packetBuffer, "SERVO DUTY: %lu", ledcRead(SERVO_CHANNEL));
-    udp.beginPacket(reciver_ip, 4210);
-    udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
-    udp.endPacket();
-    vTaskDelay(send_delay / portTICK_PERIOD_MS); 
+    dataPoints[count] = ledcRead(SERVO_CHANNEL);
+    count++;
+    
+    if (count == 10) { // When 10 data points have been collected
+      char* bufferPtr = packetBuffer;
+      bufferPtr += sprintf(bufferPtr, "SERVO DUTY: ");
+      for (int i = 0; i < 10; i++) {
+        bufferPtr += sprintf(bufferPtr, "%lu ", dataPoints[i]);
+      }
+      udp.beginPacket(reciver_ip, 4210);
+      udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
+      udp.endPacket();
+      count = 0; // Reset count
+    }
+    vTaskDelay(send_delay / portTICK_PERIOD_MS); // Send every 100ms instead of 10ms
   }
 }
 
@@ -82,7 +95,7 @@ void vBatteryV(void *pvParameters) {
 
 void setup() {
   strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
+  strip.show();
 
   uint32_t read_delay = 100;
   uint32_t send_delay = 10;

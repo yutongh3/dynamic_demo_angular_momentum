@@ -1,12 +1,12 @@
 # pyinstaller --onefile --windowed server_recive.py
 import socket
 import threading
-import time
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Button
 from collections import deque
 import yaml
+import time
 
 # Load configuration from YAML file
 with open('server_config.yaml', 'r') as file:
@@ -25,7 +25,7 @@ recv_sock.bind((recv_ip, recv_port))
 send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Data storage
-data_queue = deque(maxlen=350)  # Store the last 350 data points
+data_queue = deque(maxlen=150)  # Store up to 150 data points for display
 battery_voltage = "Battery: N/A"  # Initial battery voltage message
 
 def receive_data():
@@ -33,12 +33,16 @@ def receive_data():
         data, addr = recv_sock.recvfrom(1024)
         message = data.decode()
         if 'SERVO DUTY' in message:
-            servo_duty = message.split(':')
-            if len(servo_duty) == 2:
-                duty = int(servo_duty[1])
+            parts = message.split(': ')[1]  # Skip 'SERVO DUTY:'
+            duties = parts.split(' ')
+            duties.pop()  # Remove the last empty element after the last space
+            print(duties)
+            new_duties = list(map(int, duties))  # Convert each duty string to int
+            for duty in new_duties:
                 lock.acquire()
-                data_queue.append(duty)
+                data_queue.append(duty)  # Append each duty to the queue one by one
                 lock.release()
+                # time.sleep(0.1) 
         elif 'BATTERY V' in message:
             battery_volts = message.split(':')
             if len(battery_volts) == 2:
@@ -68,18 +72,18 @@ line, = ax.plot([], [], lw=2)
 battery_text = ax.text(0.01, 0.95, battery_voltage, transform=ax.transAxes, verticalalignment='top')
 
 def init():
-    ax.set_xlim(0, 350)
+    ax.set_xlim(0, 150)
     ax.set_ylim(0, 100)
     return line, battery_text
 
 def update(frame):
-    lock.acquire()
-    ydata = list(data_queue)
-    updated_text = battery_voltage
-    lock.release()
-    xdata = range(len(ydata))
-    line.set_data(xdata, ydata)
-    battery_text.set_text(updated_text)
+    if data_queue:
+        lock.acquire()
+        ydata = list(data_queue)
+        lock.release()
+        xdata = range(len(ydata))
+        line.set_data(xdata, ydata)
+        battery_text.set_text(battery_voltage)
     return line, battery_text
 
 # Animation
@@ -96,6 +100,6 @@ btn_expand.on_clicked(expand_servo)
 
 # Hide the toolbar and rename the window
 plt.rcParams['toolbar'] = 'None'
-fig.canvas.manager.set_window_title('Servo')
+fig.canvas.manager.set_window_title('Servo Controller')
 
 plt.show()
