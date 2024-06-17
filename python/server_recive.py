@@ -9,7 +9,8 @@ from collections import deque
 import yaml
 
 # Load configuration from YAML file
-with open('server_config_hotspot.yaml', 'r') as file:
+with open('server_config.yaml', 'r') as file:
+# with open('server_config_hotspot.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
 recv_ip = config['receive']['ip']
@@ -76,7 +77,7 @@ battery_text = ax.text(0.01, 0.95, battery_voltage, transform=ax.transAxes, vert
 
 def init():
     ax.set_xlim(0, 350)
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 4100)
     return line, battery_text
 
 def update(frame):

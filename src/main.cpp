@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <Adafruit_NeoPixel.h>
+#include <AS5600.h>
 
 #define BUTTON 38
 #define LED_PIN 13
@@ -13,22 +14,28 @@
 #define CONTRACTED 7    // 0.5ms in 20ms period. 256 / (20/0.5)
 #define EXPANDED 32     // 2.5ms in 20ms period. 256 / (20/2.5)
 
-// const char* ssid = "338smart";
-// const char* password = "qwerty123";
-// const char* reciver_ip = "172.16.0.4";
-const char* ssid = "Yutong 15P";
-const char* password = "12345678";
-const char* reciver_ip = "172.20.10.3";
+const char* ssid = "338smart";
+const char* password = "qwerty123";
+const char* reciver_ip = "172.16.0.4";
+// const char* ssid = "Yutong 15P";
+// const char* password = "12345678";
+// const char* reciver_ip = "172.20.10.3";
 
 WiFiUDP udp;
 unsigned int localUdpPort = 4210; 
 Adafruit_NeoPixel strip(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+AS5600L as5600; 
 
 void vUDPOutput(void *pvParameters) {
   uint32_t send_delay = *((uint32_t *)pvParameters);
   char packetBuffer[255];
+  Wire.begin();
+  as5600.begin(12);
+  as5600.setDirection(AS5600_CLOCK_WISE);
+  as5600.setAddress(0x36);
   while (1) {
-    sprintf(packetBuffer, "SERVO DUTY: %lu", ledcRead(SERVO_CHANNEL));
+    // sprintf(packetBuffer, "SERVO DUTY: %lu", as5600.getAngularSpeed(AS5600_MODE_RPM));
+    sprintf(packetBuffer, "SERVO DUTY: %lu", as5600.readAngle());
     udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
@@ -110,7 +117,8 @@ void setup() {
 
   xTaskCreate(vUDPInput, "Task Blink", 4096, (void *)&read_delay, 2, NULL);
   xTaskCreate(vBatteryV, "Task Blink", 4096, NULL, 2, NULL);
-  xTaskCreatePinnedToCore(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, NULL, 1);
+  xTaskCreate(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, NULL);
+  // xTaskCreatePinnedToCore(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, NULL, 1);
 }
 
 void loop() {
