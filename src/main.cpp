@@ -6,7 +6,8 @@
 
 #define BUTTON 38
 #define LED_PIN 13
-#define VBATPIN 39
+#define VBATPIN 34
+#define DIRPIN 12
 #define NEOPIXEL_PIN 0
 #define NUMPIXELS 1
 #define SERVO_PIN 27
@@ -16,7 +17,7 @@
 
 const char* ssid = "338smart";
 const char* password = "qwerty123";
-const char* reciver_ip = "172.16.0.4";
+const char* reciver_ip = "172.16.0.16";
 // const char* ssid = "Yutong 15P";
 // const char* password = "12345678";
 // const char* reciver_ip = "172.20.10.3";
@@ -30,12 +31,13 @@ void vUDPOutput(void *pvParameters) {
   uint32_t send_delay = *((uint32_t *)pvParameters);
   char packetBuffer[255];
   Wire.begin();
-  as5600.begin(12);
+  as5600.begin(DIRPIN);
   as5600.setDirection(AS5600_CLOCK_WISE);
   as5600.setAddress(0x36);
   while (1) {
-    // sprintf(packetBuffer, "SERVO DUTY: %lu", as5600.getAngularSpeed(AS5600_MODE_RPM));
-    sprintf(packetBuffer, "SERVO DUTY: %lu", as5600.readAngle());
+    sprintf(packetBuffer, "SERVO DUTY: %f", as5600.getAngularSpeed());
+    // printf("angular speed: %f\n", as5600.getAngularSpeed());
+    // sprintf(packetBuffer, "SERVO DUTY: %lu", as5600.readAngle());
     udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
@@ -82,6 +84,7 @@ void vBatteryV(void *pvParameters) {
   while (1) {
     v = (uint32_t)analogReadMilliVolts(VBATPIN);
     v *= 2;
+    // printf("Battery voltage: %lu\n", v);
     sprintf(packetBuffer, "BATTERY V: %lu", v);
     udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
@@ -95,7 +98,7 @@ void setup() {
   strip.show(); // Initialize all pixels to 'off'
 
   uint32_t read_delay = 100;
-  uint32_t send_delay = 16;
+  uint32_t send_delay = 30;
 
   strip.setPixelColor(0, strip.Color(0, 5, 0)); // Start with green color
   strip.show();

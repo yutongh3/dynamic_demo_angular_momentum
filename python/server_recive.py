@@ -37,7 +37,7 @@ def receive_data():
         if 'SERVO DUTY' in message:
             servo_duty = message.split(':')
             if len(servo_duty) == 2:
-                duty = int(servo_duty[1])
+                duty = float(servo_duty[1])
                 lock.acquire()
                 data_queue.append(duty)
                 lock.release()
@@ -77,7 +77,7 @@ battery_text = ax.text(0.01, 0.95, battery_voltage, transform=ax.transAxes, vert
 
 def init():
     ax.set_xlim(0, 350)
-    ax.set_ylim(0, 4100)
+    ax.set_ylim(-2500, 2500)
     return line, battery_text
 
 def update(frame):
@@ -93,7 +93,7 @@ def update(frame):
     return line, battery_text
 
 # Animation
-ani = FuncAnimation(fig, update, init_func=init, frames=200, interval=16, blit=True)
+ani = FuncAnimation(fig, update, init_func=init, frames=200, interval=30, blit=True)
 
 # Buttons
 ax_contract = plt.axes([0.59, 0.05, 0.15, 0.075])
