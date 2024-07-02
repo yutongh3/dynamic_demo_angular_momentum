@@ -15,12 +15,12 @@
 #define CONTRACTED 7    // 0.5ms in 20ms period. 256 / (20/0.5)
 #define EXPANDED 32     // 2.5ms in 20ms period. 256 / (20/2.5)
 
-const char* ssid = "338smart";
-const char* password = "qwerty123";
-const char* reciver_ip = "172.16.0.16";
-// const char* ssid = "Yutong 15P";
-// const char* password = "12345678";
-// const char* reciver_ip = "172.20.10.3";
+// const char* ssid = "338smart";
+// const char* password = "qwerty123";
+// const char* reciver_ip = "172.16.0.16";
+const char* ssid = "Yutong 15P";
+const char* password = "12345678";
+const char* reciver_ip = "172.20.10.2";
 
 WiFiUDP udp;
 unsigned int localUdpPort = 4210; 
