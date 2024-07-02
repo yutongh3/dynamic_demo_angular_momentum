@@ -12,8 +12,10 @@
 #define NUMPIXELS 1
 #define SERVO_PIN 27
 #define SERVO_CHANNEL 0 // Define a channel for the PWM (0-15)
-#define CONTRACTED 7    // 0.5ms in 20ms period. 256 / (20/0.5)
-#define EXPANDED 32     // 2.5ms in 20ms period. 256 / (20/2.5)
+// min is 0 degree, 0.5ms in 20ms period. 256 / (20/0.5) = 7
+// max is 180 degree, 2.5ms in 20ms period. 256 / (20/2.5) = 32
+#define CONTRACTED 29
+#define EXPANDED 10     
 
 // const char* ssid = "338smart";
 // const char* password = "qwerty123";
@@ -54,7 +56,7 @@ void vUDPInput(void *pvParameters) {
 
   ledcAttachPin(SERVO_PIN, SERVO_CHANNEL);
   ledcSetup(SERVO_CHANNEL, 50, 8);  // 50Hz with 8-bit resolution
-  ledcWrite(SERVO_CHANNEL, int((CONTRACTED + EXPANDED)/2));
+  ledcWrite(SERVO_CHANNEL, EXPANDED  );
 
   char packetBuffer[255];
   int packetSize;
