@@ -94,13 +94,7 @@ void vBatteryV(void *pvParameters) {
     udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
-    if (v < 7400) {
-      i++;
-    }
-    else {
-      i = 0;
-    }
-    if (i > 10) {
+    if (v < 3700) {
       strip.setPixelColor(0, strip.Color(5, 0, 0)); // Red color when battery is low
       strip.show(); 
       vTaskDelete(xInputHandle);
