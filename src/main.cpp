@@ -27,6 +27,10 @@ unsigned int localUdpPort = 4210;
 Adafruit_NeoPixel strip(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 AS5600L as5600; 
 
+TaskHandle_t xInputHandle;
+TaskHandle_t xOutputHandle;
+TaskHandle_t xBatteryVHandle;
+
 void vUDPOutput(void *pvParameters) {
   uint32_t send_delay = *((uint32_t *)pvParameters);
   char packetBuffer[255];
@@ -50,7 +54,7 @@ void vUDPInput(void *pvParameters) {
 
   ledcAttachPin(SERVO_PIN, SERVO_CHANNEL);
   ledcSetup(SERVO_CHANNEL, 50, 8);  // 50Hz with 8-bit resolution
-  ledcWrite(SERVO_CHANNEL, EXPANDED);
+  ledcWrite(SERVO_CHANNEL, int((CONTRACTED + EXPANDED)/2));
 
   char packetBuffer[255];
   int packetSize;
@@ -81,6 +85,7 @@ void vUDPInput(void *pvParameters) {
 void vBatteryV(void *pvParameters) {
   char packetBuffer[255];
   uint32_t v;
+  uint8_t i = 0;
   while (1) {
     v = (uint32_t)analogReadMilliVolts(VBATPIN);
     v *= 2;
@@ -89,6 +94,19 @@ void vBatteryV(void *pvParameters) {
     udp.beginPacket(reciver_ip, 4210);
     udp.write((uint8_t*)packetBuffer, strlen(packetBuffer));
     udp.endPacket();
+    if (v < 7400) {
+      i++;
+    }
+    else {
+      i = 0;
+    }
+    if (i > 10) {
+      strip.setPixelColor(0, strip.Color(5, 0, 0)); // Red color when battery is low
+      strip.show(); 
+      vTaskDelete(xInputHandle);
+      vTaskDelete(xOutputHandle);
+      vTaskDelete(xBatteryVHandle);
+    }
     vTaskDelay(2000 / portTICK_PERIOD_MS); 
   }
 }
@@ -100,7 +118,7 @@ void setup() {
   uint32_t read_delay = 100;
   uint32_t send_delay = 30;
 
-  strip.setPixelColor(0, strip.Color(0, 5, 0)); // Start with green color
+  strip.setPixelColor(0, strip.Color(0, 5, 5));
   strip.show();
 
   Serial.begin(115200);
@@ -118,9 +136,9 @@ void setup() {
   udp.begin(localUdpPort);
   Serial.printf("UDP port %d\n", localUdpPort);
 
-  xTaskCreate(vUDPInput, "Task Blink", 4096, (void *)&read_delay, 2, NULL);
-  xTaskCreate(vBatteryV, "Task Blink", 4096, NULL, 2, NULL);
-  xTaskCreate(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, NULL);
+  xTaskCreate(vUDPInput, "Task Blink", 4096, (void *)&read_delay, 2, &xInputHandle);
+  xTaskCreatePinnedToCore(vBatteryV, "Task Blink", 4096, NULL, 2, &xBatteryVHandle, 1);
+  xTaskCreatePinnedToCore(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, &xOutputHandle, 1);
   // xTaskCreatePinnedToCore(vUDPOutput, "Task Blink", 4096, (void *)&send_delay, 2, NULL, 1);
 }
 
