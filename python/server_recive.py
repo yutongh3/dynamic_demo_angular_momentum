@@ -9,8 +9,8 @@ from collections import deque
 import yaml
 
 # Load configuration from YAML file
-# with open('server_config.yaml', 'r') as file:
-with open('server_config_hotspot.yaml', 'r') as file:
+with open('server_config.yaml', 'r') as file:
+# with open('server_config_hotspot.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
 recv_ip = config['receive']['ip']

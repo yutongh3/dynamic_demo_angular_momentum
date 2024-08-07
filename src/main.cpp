@@ -20,9 +20,6 @@
 const char* ssid = "24351Dynamic";
 const char* password = "24351Dynamic";
 const char* reciver_ip = "173.15.0.90";
-// const char* ssid = "Yutong 15P";
-// const char* password = "12345678";
-// const char* reciver_ip = "172.20.10.2";
 
 WiFiUDP udp;
 unsigned int localUdpPort = 4210; 
